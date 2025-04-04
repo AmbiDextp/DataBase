@@ -1,0 +1,96 @@
+-- database: ./University.db
+
+CREATE TABLE Students(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER NOT NULL,
+    pass_id INTEGER NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    birthday TEXT NOT NULL,
+    FOREIGN KEY(pass_id) REFERENCES Passes(id),     
+    FOREIGN KEY(group_id) REFERENCES Groups(id)
+);
+
+DROP TABLE Students;
+
+CREATE TABLE Passes(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    student_id INTEGER NOT NULL UNIQUE,
+    start_date TEXT NOT NULL,
+    end_date TEXT NOT NULL CHECK(end_date > start_date),     
+    FOREIGN KEY(student_id) REFERENCES Students(id)
+);
+
+DROP TABLE Passes;
+
+CREATE TABLE Curators(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL
+);
+
+DROP TABLE Curators;
+
+CREATE TABLE Groups(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    curator_id INTEGER NOT NULL,
+    name_number TEXT NOT NULL,    
+    FOREIGN KEY(curator_id) REFERENCES Curators(id)
+);
+
+DROP TABLE Groups;
+
+CREATE TABLE Marks(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL,
+    student_id INTEGER NOT NULL,    
+    mark INTEGER CHECK(mark >= 2 AND mark <= 5),
+    FOREIGN KEY(course_id) REFERENCES Courses(id),     
+    FOREIGN KEY(student_id) REFERENCES Students(id)
+);
+
+DROP TABLE Marks;
+
+CREATE TABLE Courses(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL UNIQUE
+);
+
+DROP TABLE Courses;
+
+CREATE TABLE Lessons(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER NOT NULL,
+    teacher_id INTEGER NOT NULL,
+    course_id INTEGER NOT NULL,
+    time TEXT NOT NULL,
+    FOREIGN KEY(group_id) REFERENCES Groups(id)
+    FOREIGN KEY(teacher_id) REFERENCES Teachers(id),     
+    FOREIGN KEY(course_id) REFERENCES Courses(id)
+);
+
+DROP TABLE Lessons;
+
+CREATE TABLE Teachers(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    degree_id INTEGER NOT NULL,
+    position_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    FOREIGN KEY(degree_id) REFERENCES Degrees(id),     
+    FOREIGN KEY(position_id) REFERENCES Positions(id)
+);
+
+DROP TABLE Teachers;
+
+CREATE TABLE Degrees(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL UNIQUE
+);
+
+DROP TABLE Degrees;
+
+CREATE TABLE Positions(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL UNIQUE
+);
+
+DROP TABLE Positions;
+

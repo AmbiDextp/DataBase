@@ -1,0 +1,18 @@
+-- database: ./University.db
+
+INSERT INTO Students VALUES
+    (1, (SELECT id from `Groups` WHERE id = 1), (SELECT id from Passes WHERE id = 1), "Никифоров Артём Львович", "2003-09-13"),
+    (2, (SELECT id from `Groups` WHERE id = 1), (SELECT id from Passes WHERE id = 1), "Ефимов Мартин Егорович", "2003-12-01"),
+    (3, (SELECT id from `Groups` WHERE id = 1), (SELECT id from Passes WHERE id = 1), "Осипова Ева Данииловна", "2003-02-27"),
+    (4, (SELECT id from `Groups` WHERE id = 1), (SELECT id from Passes WHERE id = 1), "Прохорова Софья Романовна", "2003-02-11"),
+    (5, (SELECT id from `Groups` WHERE id = 1), (SELECT id from Passes WHERE id = 1), "Родионова Мария Ярославовна", "2003-05-15"),
+    (6, (SELECT id from `Groups` WHERE id = 2), (SELECT id from Passes WHERE id = 1), "Леонов Марк Кириллович", "2003-03-03"),
+    (7, (SELECT id from `Groups` WHERE id = 2), (SELECT id from Passes WHERE id = 1), "Романова Милана Арсентьевна", "2003-06-30"),
+    (8, (SELECT id from `Groups` WHERE id = 2), (SELECT id from Passes WHERE id = 1), "Кузнецова Полина Марковна", "2003-07-11"),
+    (9, (SELECT id from `Groups` WHERE id = 2), (SELECT id from Passes WHERE id = 1), "Шилова Виктория Александровна", "2003-01-31"),
+    (10, (SELECT id from `Groups` WHERE id = 2), (SELECT id from Passes WHERE id = 1), "Федотова Виолетта Александровна", "2003-01-14"),
+    (11, (SELECT id from `Groups` WHERE id = 3), (SELECT id from Passes WHERE id = 1), "Попова Ева Рафаэльевна", "2003-11-02"),
+    (12, (SELECT id from `Groups` WHERE id = 3), (SELECT id from Passes WHERE id = 1), "Волков Матвей Ильич", "2003-10-10"),
+    (13, (SELECT id from `Groups` WHERE id = 3), (SELECT id from Passes WHERE id = 1), "Демин Марк Артёмович", "2003-10-25"),
+    (14, (SELECT id from `Groups` WHERE id = 3), (SELECT id from Passes WHERE id = 1), "Воробьев Евгений Даниилович", "2003-08-22"),
+    (15, (SELECT id from `Groups` WHERE id = 3), (SELECT id from Passes WHERE id = 1), "Калмыкова Кира Максимовна", "2003-07-04");

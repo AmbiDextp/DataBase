@@ -1,0 +1,26 @@
+-- database: ../University.db
+
+INSERT INTO Lessons (group_id, teacher_id, course_id, time) VALUES
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 6), (SELECT id FROM Courses WHERE id = 1), "08:30"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 5), (SELECT id FROM Courses WHERE id = 2), "10:10"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 1), (SELECT id FROM Courses WHERE id = 3), "11:50"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 8), (SELECT id FROM Courses WHERE id = 4), "13:30"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 9), (SELECT id FROM Courses WHERE id = 5), "15:10"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 10), (SELECT id FROM Courses WHERE id = 7), "16:50"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 4), (SELECT id FROM Courses WHERE id = 6), "18:30"),
+
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 5), (SELECT id FROM Courses WHERE id = 2), "08:30"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 6), (SELECT id FROM Courses WHERE id = 1), "10:10"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 8), (SELECT id FROM Courses WHERE id = 4), "11:50"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 1), (SELECT id FROM Courses WHERE id = 3), "13:30"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 10), (SELECT id FROM Courses WHERE id = 7), "15:10"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 4), (SELECT id FROM Courses WHERE id = 6), "16:50"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 9), (SELECT id FROM Courses WHERE id = 5), "18:30"),
+
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 8), (SELECT id FROM Courses WHERE id = 4), "08:30"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 1), (SELECT id FROM Courses WHERE id = 3), "10:10"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 6), (SELECT id FROM Courses WHERE id = 1), "11:50"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 5), (SELECT id FROM Courses WHERE id = 2), "13:30"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 4), (SELECT id FROM Courses WHERE id = 6), "15:10"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 9), (SELECT id FROM Courses WHERE id = 5), "16:50"),
+    ((SELECT id FROM `Groups` WHERE id = 1), (SELECT id FROM Teachers WHERE id = 10), (SELECT id FROM Courses WHERE id = 7), "18:30");

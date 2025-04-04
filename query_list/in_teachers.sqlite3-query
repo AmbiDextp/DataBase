@@ -1,0 +1,13 @@
+-- database: ./University.db
+
+INSERT INTO Teachers (degree_id, position_id, name) VALUES
+    ((SELECT id FROM Degrees WHERE id = 1), (SELECT id FROM Positions WHERE id = 1), "Борисов Тимофей Ильич"),
+    ((SELECT id FROM Degrees WHERE id = 2), (SELECT id FROM Positions WHERE id = 2), "Коновалов Роман Даниилович"),
+    ((SELECT id FROM Degrees WHERE id = 3), (SELECT id FROM Positions WHERE id = 3), "Ермолаев Михаил Владимирович"),
+    ((SELECT id FROM Degrees WHERE id = 4), (SELECT id FROM Positions WHERE id = 3), "Чернышев Арсений Артёмович"),
+    ((SELECT id FROM Degrees WHERE id = 4), (SELECT id FROM Positions WHERE id = 4), "Егоров Платон Кириллович"),
+    ((SELECT id FROM Degrees WHERE id = 3), (SELECT id FROM Positions WHERE id = 4), "Мельникова Стефания Гордеевна"),
+    ((SELECT id FROM Degrees WHERE id = 1), (SELECT id FROM Positions WHERE id = 5), "Яковлева Ксения Тимофеевна"),
+    ((SELECT id FROM Degrees WHERE id = 2), (SELECT id FROM Positions WHERE id = 5), "Боброва Евгения Степановна"),
+    ((SELECT id FROM Degrees WHERE id = 2), (SELECT id FROM Positions WHERE id = 5), "Маркова Ольга Фёдоровна"),
+    ((SELECT id FROM Degrees WHERE id = 1), (SELECT id FROM Positions WHERE id = 5), "Бессонова Лиана Артемьевна");

@@ -1,0 +1,4 @@
+-- database: ./University.db
+
+INSERT INTO Passes VALUES
+    (1, "2021-09-01", "2025-07-01");

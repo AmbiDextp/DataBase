@@ -1,24 +1,14 @@
--- database: ./University.db
+-- database: ../University.db
 
 CREATE TABLE Students(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     group_id INTEGER NOT NULL,
-    pass_id INTEGER NOT NULL,
     name TEXT NOT NULL,
     birthday TEXT NOT NULL,
-    FOREIGN KEY(pass_id) REFERENCES Passes(id),     
     FOREIGN KEY(group_id) REFERENCES Groups(id)
 );
 
 DROP TABLE Students;
-
-CREATE TABLE Passes(
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    start_date TEXT NOT NULL,
-    end_date TEXT NOT NULL CHECK(end_date > start_date)
-);
-
-DROP TABLE Passes;
 
 CREATE TABLE Curators(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +19,7 @@ DROP TABLE Curators;
 
 CREATE TABLE Groups(
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    curator_id INTEGER NOT NULL,
+    curator_id INTEGER NOT NULL UNIQUE,
     name_number TEXT NOT NULL,    
     FOREIGN KEY(curator_id) REFERENCES Curators(id)
 );
@@ -91,4 +81,3 @@ CREATE TABLE Positions(
 );
 
 DROP TABLE Positions;
-

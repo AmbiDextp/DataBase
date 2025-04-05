@@ -1,4 +1,4 @@
--- database: ./University.db
+-- database: ../University.db
 
 INSERT INTO Degrees (title)
 VALUES

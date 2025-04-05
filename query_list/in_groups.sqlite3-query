@@ -1,6 +1,6 @@
--- database: ./University.db
+-- database: ../University.db
 
 INSERT INTO `Groups` VALUES 
-    (1, (select id from Curators where id = 1), "Б9121-09.03.03пикд"),
-    (2, (select id from Curators where id = 2), "Б9121-09.03.03цтэ"),
-    (3, (select id from Curators where id = 3), "Б9121-01.03.02сп");
+    (1, (select id from Curators where id = 1), "Б9121-09.03.03"),
+    (2, (select id from Curators where id = 2), "Б9122-09.03.03"),
+    (3, (select id from Curators where id = 3), "Б9121-01.03.02");

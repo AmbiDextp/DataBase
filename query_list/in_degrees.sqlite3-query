@@ -1,7 +1,6 @@
 -- database: ../University.db
 
-INSERT INTO Degrees (title)
-VALUES
+INSERT INTO Degrees (title) VALUES
     ('к.ф.-м.н'),
     ('д.ф.-м.н'),
     ('к.т.н'),

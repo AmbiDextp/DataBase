@@ -120,34 +120,3 @@ INSERT INTO Marks (course_id, student_id, mark) VALUES
     (5, 15, 4),
     (6, 15, 4),
     (7, 15, 4);
-
-
-    INSERT INTO Marks (course_id, student_id, mark) VALUES
-        (ABS(RANDOM()) % 7 + 1, ABS(RANDOM()) % 315 + 1, ABS(RANDOM()) % 4 + 2);
-
-    CREATE INDEX idx_marks_student_id ON Marks(student_id);
-    DROP INDEX idx_marks_student_id;
-
-    EXPLAIN QUERY PLAN SELECT * FROM Marks WHERE student_id = 10;
-
-    SELECT name FROM sqlite_master WHERE type = 'index';
-
-    SELECT 
-    s.name AS student_name,
-    ROUND(AVG(m.mark), 2) AS average_grade
-    FROM Marks m
-    JOIN Students s ON m.student_id = s.id
-    WHERE m.student_id = 12;
-
-
-    SELECT 
-    g.name_number AS group_name,
-    c.title AS course,
-    t.name AS teacher,
-    l.time AS lesson_time
-    FROM Lessons l
-    JOIN Groups g ON l.group_id = g.id
-    JOIN Courses c ON l.course_id = c.id
-    JOIN Teachers t ON l.teacher_id = t.id
-    WHERE g.id = 1 
-    ORDER BY l.time;

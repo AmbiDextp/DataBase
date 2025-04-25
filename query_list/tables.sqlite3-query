@@ -32,7 +32,7 @@ CREATE TABLE Marks(
     student_id INTEGER NOT NULL,    
     mark INTEGER CHECK(mark >= 2 AND mark <= 5),
     FOREIGN KEY(course_id) REFERENCES Courses(id),     
-    FOREIGN KEY(student_id) REFERENCES Students(id)
+    FOREIGN KEY(student_id) REFERENCES Students(id) ON DELETE CASCADE
 );
 
 DROP TABLE Marks;
@@ -51,7 +51,7 @@ CREATE TABLE Lessons(
     course_id INTEGER NOT NULL,
     time TEXT NOT NULL,
     FOREIGN KEY(group_id) REFERENCES Groups(id)
-    FOREIGN KEY(teacher_id) REFERENCES Teachers(id),     
+    FOREIGN KEY(teacher_id) REFERENCES Teachers(id) ON DELETE CASCADE,   
     FOREIGN KEY(course_id) REFERENCES Courses(id)
 );
 

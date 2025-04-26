@@ -1,0 +1,4 @@
+-- database: ../University.db
+
+CREATE INDEX idx_title ON Teachers(degree_id);
+SELECT name FROM sqlite_master WHERE type = 'index';

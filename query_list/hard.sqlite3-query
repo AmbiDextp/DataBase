@@ -1,0 +1,43 @@
+-- database: ../University.db
+
+SELECT 
+s.name AS student_name,
+ROUND(AVG(m.mark), 2) AS average_grade
+FROM Marks m
+JOIN Students s ON m.student_id = s.id;
+
+SELECT 
+g.name_number AS group_name,
+c.title AS course,
+t.name AS teacher,
+l.time AS lesson_time
+FROM Lessons l
+JOIN Groups g ON l.group_id = g.id
+JOIN Courses c ON l.course_id = c.id
+JOIN Teachers t ON l.teacher_id = t.id
+WHERE g.id = 1 
+ORDER BY l.time;
+
+SELECT DISTINCT
+t.name AS teacher,
+c.title AS course
+FROM Teachers t
+JOIN Lessons l ON t.id = l.teacher_id
+JOIN Courses c ON l.course_id = c.id;
+
+SELECT 
+c.name AS curator,
+STRING_AGG(s.name, ', ') AS 'students',
+COUNT(DISTINCT s.id) AS stud_count
+FROM Curators c
+JOIN `Groups` g ON c.id = g.curator_id
+JOIN Students s ON g.id = s.group_id
+GROUP BY c.name;
+
+SELECT
+t.name AS teacher,
+d.title AS degree,
+p.title AS 'position'
+FROM Degrees d
+JOIN Teachers t ON d.id = t.degree_id
+JOIN Positions p ON t.position_id = p.id;

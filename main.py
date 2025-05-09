@@ -1,27 +1,15 @@
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import HTMLResponse, JSONResponse
+from typing import Annotated, List
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, CheckConstraint
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column
-from starlette.applications import Starlette
+from sqlalchemy.orm import declarative_base, Mapped, mapped_column, Session
+from pydantic import BaseModel
+from starlette_admin.contrib.sqla import Admin, ModelView
 import uvicorn
 
-
-from fastapi import FastAPI, HTTPException, Depends
-from sqlalchemy.orm import Session
-from typing import List
-from pydantic import BaseModel
-from datetime import date
-
-from starlette_admin.contrib.sqla import Admin, ModelView
-
-SQLALCHEMY_DATABASE_URL = "sqlite:///./University.db"
-
-engine = create_engine(
-    SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False}
-)
+engine = create_engine("sqlite:///./University.db", connect_args={"check_same_thread": False})
 
 Base = declarative_base()
-
 
 class Curator(Base):
     __tablename__ = "Curators"
@@ -35,7 +23,6 @@ class Group(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     curator_id = Column(Integer, ForeignKey('Curators.id'), nullable=False, unique=True)
     name_number = Column(String, nullable=False)
-
 
 class Student(Base):
     __tablename__ = "Students"
@@ -90,10 +77,14 @@ class Lesson(Base):
     teacher_id = Column(Integer, ForeignKey('Teachers.id', ondelete='CASCADE'), nullable=False)
     course_id = Column(Integer, ForeignKey('Courses.id'), nullable=False)
 
-
-
-
 Base.metadata.create_all(bind = engine)
+
+
+def get_db():
+    with Session(engine) as session:
+        yield session
+
+dbDep = Annotated[Session, Depends(get_db)]
 
 app = FastAPI()
 
@@ -101,6 +92,432 @@ app = FastAPI()
 def Hello():
     html_content = "<h2>url/docs -- для действий с эндпоинтами</h2> <h2>url/admin -- админка(просто либа)</h2> <h2>url/table_name -- вывод всех данных таблицы</h2>"
     return HTMLResponse(content=html_content)
+
+#-------------------------------------- MMMHHHHMMMM DELICIOUS --------------------------------------
+
+class CuratorCreate(BaseModel):
+    name: str
+
+class CuratorResponse(CuratorCreate):
+    id: int
+
+@app.post("/curators/", tags=["CRUD"], response_model=CuratorResponse)
+def create_curator(curator: CuratorCreate, db: dbDep):
+    curator_db = Curator.model_validate(curator)
+    db.add(curator_db)
+    db.commit()
+    db.refresh(curator_db)
+    return curator_db
+
+@app.get("/curators/", tags=["CRUD"], response_model=List[CuratorResponse])
+def read_curators(db: dbDep):
+    return db.query(Curator).all()
+
+@app.get("/curators/{curator_id}", tags=["CRUD"])
+def read_curator(curator_id: int, db: dbDep):
+    curator = db.get(Curator, curator_id)
+    if not curator:
+        raise HTTPException(status_code=404, detail="Curator not found")
+    return curator   
+
+@app.put("/curators/{curator_id}", tags=["CRUD"], response_model=CuratorResponse)
+def update_curator(curator_id: int, curator: CuratorCreate, db: dbDep):
+    curator_db = db.get(Curator, curator_id)
+    if not curator_db:
+        raise HTTPException(status_code=404, detail="Curator not found")
+    curator_db.name = curator.name
+    db.commit()
+    db.refresh(curator_db)
+    return curator_db
+
+
+@app.delete("/curators/{curator_id}", tags=["CRUD"])
+def delete_curator(curator_id: int, db: dbDep):
+    curator = db.get(Curator, curator_id)
+    if not curator:
+        raise HTTPException(status_code=404, detail="Curator not found")
+    db.delete(curator)
+    db.commit()
+    return {"ok": True}
+
+
+class GroupCreate(BaseModel):
+    curator_id: int
+    name_number: str
+
+class GroupResponse(GroupCreate):
+    id: int
+
+@app.post("/groups/", tags=["CRUD"], response_model=GroupResponse)
+def create_group(group: GroupCreate, db: dbDep):
+    group_db = Group.model_validate(group)
+    db.add(group_db)
+    db.commit()
+    db.refresh(group_db)
+    return group_db
+
+@app.get("/groups/", tags=["CRUD"], response_model=List[GroupResponse])
+def read_groups(db: dbDep):
+    return db.query(Group).all()
+
+@app.get("/groups/{group_id}", tags=["CRUD"])
+def read_group(group_id: int, db: dbDep):
+    group = db.get(Group, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return group   
+
+@app.put("/groups/{group_id}", tags=["CRUD"], response_model=GroupResponse)
+def update_group(group_id: int, group: GroupCreate, db: dbDep):
+    group_db = db.get(Group, group_id)
+    if not group_db:
+        raise HTTPException(status_code=404, detail="Group not found")
+    group_db.name_number = group.name_number
+    group_db.curator_id = group.curator_id  
+    db.commit()
+    db.refresh(group_db)
+    return group_db
+
+@app.delete("/groups/{group_id}", tags=["CRUD"])
+def delete_group(group_id: int, db: dbDep):
+    group = db.get(Group, group_id)
+    if not group:
+        raise HTTPException(status_code=404, detail="Group not found")
+    db.delete(group)
+    db.commit()
+    return {"ok": True}
+
+
+class StudentCreate(BaseModel):
+    group_id: int
+    name: str
+    birthday: str
+
+class StudentResponse(StudentCreate):
+    id: int
+
+@app.post("/students/", tags=["CRUD"], response_model=StudentResponse)
+def create_student(student: StudentCreate, db: dbDep):
+    student_db = Student.model_validate(student)
+    db.add(student_db)
+    db.commit()
+    db.refresh(student_db)
+    return student_db
+
+@app.get("/students/", tags=["CRUD"], response_model=List[StudentResponse])
+def read_students(db: dbDep):
+    return db.query(Student).all()
+
+@app.get("/students/{student_id}", tags=["CRUD"])
+def read_student(student_id: int, db: dbDep):
+    student = db.get(Student, student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student  
+
+@app.put("/students/{student_id}", tags=["CRUD"], response_model=StudentResponse)
+def update_student(student_id: int, student: StudentCreate, db: dbDep):
+    student_db = db.get(Student, student_id)
+    if not student_db:
+        raise HTTPException(status_code=404, detail="Student not found")
+    student_db.group_id = student.group_id
+    student_db.name = student.name
+    student_db.birthday = student.birthday
+    db.commit()
+    db.refresh(student_db)
+    return student_db
+
+@app.delete("/students/{student_id}", tags=["CRUD"])
+def delete_student(student_id: int, db: dbDep):
+    student = db.get(Student, student_id)
+    if not student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    db.delete(student)
+    db.commit()
+    return {"ok": True}
+
+
+class CourseCreate(BaseModel):
+    title: str
+
+class CourseResponse(CourseCreate):
+    id: int
+
+@app.post("/courses/", tags=["CRUD"], response_model=CourseResponse)
+def create_course(course: CourseCreate, db: dbDep):
+    course_db = Course.model_validate(course)
+    db.add(course_db)
+    db.commit()
+    db.refresh(course_db)
+    return course_db
+
+@app.get("/courses/", tags=["CRUD"], response_model=List[CourseResponse])
+def read_courses(db: dbDep):
+    return db.query(Course).all()
+
+@app.get("/courses/{course_id}", tags=["CRUD"])
+def read_course(course_id: int, db: dbDep):
+    course = db.get(Course, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    return course  
+
+@app.put("/courses/{course_id}", tags=["CRUD"], response_model=CourseResponse)
+def update_course(course_id: int, course: CourseCreate, db: dbDep):
+    course_db = db.get(Course, course_id)
+    if not course_db:
+        raise HTTPException(status_code=404, detail="Course not found")
+    course_db.title = course.title
+    db.commit()
+    db.refresh(course_db)
+    return course_db
+
+@app.delete("/courses/{course_id}", tags=["CRUD"])
+def delete_course(course_id: int, db: dbDep):
+    course = db.get(Course, course_id)
+    if not course:
+        raise HTTPException(status_code=404, detail="Course not found")
+    db.delete(course)
+    db.commit()
+    return {"ok": True}
+
+
+class MarkCreate(BaseModel):
+    course_id: int
+    student_id: int
+    mark: int
+
+class MarkResponse(MarkCreate):
+    id: int
+
+@app.post("/marks/", tags=["CRUD"], response_model=MarkResponse)
+def create_mark(mark: MarkCreate, db: dbDep):
+    mark_db = Mark.model_validate(mark)
+    db.add(mark_db)
+    db.commit()
+    db.refresh(mark_db)
+    return mark_db
+
+@app.get("/marks/", tags=["CRUD"], response_model=List[MarkResponse])
+def read_marks(db: dbDep):
+    return db.query(Mark).all()
+
+@app.get("/marks/{mark_id}", tags=["CRUD"])
+def read_mark(mark_id: int, db: dbDep):
+    mark = db.get(Mark, mark_id)
+    if not mark:
+        raise HTTPException(status_code=404, detail="Mark not found")
+    return mark  
+
+@app.put("/marks/{mark_id}", tags=["CRUD"], response_model=MarkResponse)
+def update_mark(mark_id: int, mark: MarkCreate, db: dbDep):
+    mark_db = db.get(Mark, mark_id)
+    if not mark_db:
+        raise HTTPException(status_code=404, detail="Mark not found")
+    mark_db.course_id = mark.course_id
+    mark_db.student_id = mark.student_id
+    mark_db.mark = mark.mark
+    db.commit()
+    db.refresh(mark_db)
+    return mark_db
+
+@app.delete("/marks/{mark_id}", tags=["CRUD"])
+def delete_mark(mark_id: int, db: dbDep):
+    mark = db.get(Mark, mark_id)
+    if not mark:
+        raise HTTPException(status_code=404, detail="Mark not found")
+    db.delete(mark)
+    db.commit()
+    return {"ok": True}
+
+
+class DegreeCreate(BaseModel):
+    title: str
+
+class DegreeResponse(DegreeCreate):
+    id: int
+
+@app.post("/degrees/", tags=["CRUD"], response_model=DegreeResponse)
+def create_degree(degree: DegreeCreate, db: dbDep):
+    degree_db = Degree.model_validate(degree)
+    db.add(degree_db)
+    db.commit()
+    db.refresh(degree_db)
+    return degree_db
+
+@app.get("/degrees/", tags=["CRUD"], response_model=List[DegreeResponse])
+def read_degrees(db: dbDep):
+    return db.query(Degree).all()
+
+@app.get("/degrees/{degree_id}", tags=["CRUD"])
+def read_degree(degree_id: int, db: dbDep):
+    degree = db.get(Degree, degree_id)
+    if not degree:
+        raise HTTPException(status_code=404, detail="Degree not found")
+    return degree  
+
+@app.put("/degrees/{degree_id}", tags=["CRUD"], response_model=DegreeResponse)
+def update_degree(degree_id: int, degree: DegreeCreate, db: dbDep):
+    degree_db = db.get(Degree, degree_id)
+    if not degree_db:
+        raise HTTPException(status_code=404, detail="Degree not found")
+    degree_db.title = degree.title
+    db.commit()
+    db.refresh(degree_db)
+    return degree_db
+
+@app.delete("/degrees/{degree_id}", tags=["CRUD"])
+def delete_degree(degree_id: int, db: dbDep):
+    degree = db.get(Degree, degree_id)
+    if not degree:
+        raise HTTPException(status_code=404, detail="Degree not found")
+    db.delete(degree)
+    db.commit()
+    return {"ok": True}
+
+
+class PositionCreate(BaseModel):
+    title: str
+
+class PositionResponse(PositionCreate):
+    id: int
+
+@app.post("/positions/", tags=["CRUD"], response_model=PositionResponse)
+def create_position(position: PositionCreate, db: dbDep):
+    position_db = Position.model_validate(position)
+    db.add(position_db)
+    db.commit()
+    db.refresh(position_db)
+    return position_db
+
+@app.get("/positions/", tags=["CRUD"], response_model=List[PositionResponse])
+def read_positions(db: dbDep):
+    return db.query(Position).all()
+
+@app.get("/positions/{position_id}", tags=["CRUD"])
+def read_position(position_id: int, db: dbDep):
+    position = db.get(Position, position_id)
+    if not position:
+        raise HTTPException(status_code=404, detail="Position not found")
+    return position  
+
+@app.put("/positions/{position_id}", tags=["CRUD"], response_model=PositionResponse)
+def update_position(position_id: int, position: PositionCreate, db: dbDep):
+    position_db = db.get(Position, position_id)
+    if not position_db:
+        raise HTTPException(status_code=404, detail="Position not found")
+    position_db.title = position.title
+    db.commit()
+    db.refresh(position_db)
+    return position_db
+
+@app.delete("/positions/{position_id}", tags=["CRUD"])
+def delete_position(position_id: int, db: dbDep):
+    position = db.get(Position, position_id)
+    if not position:
+        raise HTTPException(status_code=404, detail="Position not found")
+    db.delete(position)
+    db.commit()
+    return {"ok": True}
+
+
+class TeacherCreate(BaseModel):
+    degree_id: int
+    position_id: int
+    name: str
+
+class TeacherResponse(TeacherCreate):
+    id: int
+
+@app.post("/teachers/", tags=["CRUD"], response_model=TeacherResponse)
+def create_teacher(teacher: PositionCreate, db: dbDep):
+    teacher_db = Teacher.model_validate(teacher)
+    db.add(teacher_db)
+    db.commit()
+    db.refresh(teacher_db)
+    return teacher_db
+
+@app.get("/teachers/", tags=["CRUD"], response_model=List[TeacherResponse])
+def read_teachers(db: dbDep):
+    return db.query(Teacher).all()
+
+@app.get("/teachers/{teacher_id}", tags=["CRUD"])
+def read_teacher(teacher_id: int, db: dbDep):
+    teacher = db.get(Teacher, teacher_id)
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    return teacher  
+
+@app.put("/teachers/{teacher_id}", tags=["CRUD"], response_model=TeacherResponse)
+def update_teacher(teacher_id: int, teacher: TeacherCreate, db: dbDep):
+    teacher_db = db.get(Teacher, teacher_id)
+    if not teacher_db:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    teacher_db.degree_id = teacher.degree_id
+    teacher_db.position_id = teacher.position_id
+    teacher_db.name = teacher.name
+    db.commit()
+    db.refresh(teacher_db)
+    return teacher_db
+
+@app.delete("/teachers/{teacher_id}", tags=["CRUD"])
+def delete_teacher(teacher_id: int, db: dbDep):
+    teacher = db.get(Teacher, teacher_id)
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    db.delete(teacher)
+    db.commit()
+    return {"ok": True}
+
+
+class LessonCreate(BaseModel):
+    group_id: int
+    teacher_id: int
+    course_id: int
+
+class LessonResponse(LessonCreate):
+    id: int
+
+@app.post("/lessons/", tags=["CRUD"], response_model=LessonResponse)
+def create_lesson(lesson: LessonCreate, db: dbDep):
+    lesson_db = Lesson.model_validate(lesson)
+    db.add(lesson_db)
+    db.commit()
+    db.refresh(lesson_db)
+    return lesson_db
+
+@app.get("/lessons/", tags=["CRUD"], response_model=List[LessonResponse])
+def read_lessons(db: dbDep):
+    return db.query(Lesson).all()
+
+@app.get("/lessons/{lesson_id}", tags=["CRUD"])
+def read_lesson(lesson_id: int, db: dbDep):
+    lesson = db.get(Lesson, lesson_id)
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    return lesson  
+
+@app.put("/lessons/{lesson_id}", tags=["CRUD"], response_model=LessonResponse)
+def update_lesson(lesson_id: int, lesson: LessonCreate, db: dbDep):
+    lesson_db = db.get(Lesson, lesson_id)
+    if not lesson_db:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    lesson_db.group_id = lesson.group_id
+    lesson_db.teacher_id = lesson.teacher_id
+    lesson_db.course_id = lesson.course_id
+    db.commit()
+    db.refresh(lesson_db)
+    return lesson_db
+
+@app.delete("/lessons/{lesson_id}", tags=["CRUD"])
+def delete_lesson(lesson_id: int, db: dbDep):
+    lesson = db.get(Lesson, lesson_id)
+    if not lesson:
+        raise HTTPException(status_code=404, detail="Lesson not found")
+    db.delete(lesson)
+    db.commit()
+    return {"ok": True}
+#-------------------------------------- JUST FOR CHILL --------------------------------------
 
 admin = Admin(engine, title="DataBase")
 admin.add_view(ModelView(Student))
@@ -113,224 +530,6 @@ admin.add_view(ModelView(Curator))
 admin.add_view(ModelView(Degree))
 admin.add_view(ModelView(Position))
 admin.mount_to(app)
-
-# ------------------------------------------------------------------------------------------------
-
-def get_db():
-    db = Session(engine)
-    try:
-        yield db
-    finally:
-        db.close()
-
-# Pydantic модели для запросов и ответов
-class CuratorCreate(BaseModel):
-    name: str
-
-class CuratorResponse(CuratorCreate):
-    id: int
-
-class GroupCreate(BaseModel):
-    curator_id: int
-    name_number: str
-
-class GroupResponse(GroupCreate):
-    id: int
-
-class StudentCreate(BaseModel):
-    group_id: int
-    name: str
-    birthday: str  # или можно использовать date если преобразуете строку
-
-class StudentResponse(StudentCreate):
-    id: int
-
-class CourseCreate(BaseModel):
-    title: str
-
-class CourseResponse(CourseCreate):
-    id: int
-
-class MarkCreate(BaseModel):
-    course_id: int
-    student_id: int
-    mark: int
-
-class MarkResponse(MarkCreate):
-    id: int
-
-class DegreeCreate(BaseModel):
-    title: str
-
-class DegreeResponse(DegreeCreate):
-    id: int
-
-class PositionCreate(BaseModel):
-    title: str
-
-class PositionResponse(PositionCreate):
-    id: int
-
-class TeacherCreate(BaseModel):
-    degree_id: int
-    position_id: int
-    name: str
-
-class TeacherResponse(TeacherCreate):
-    id: int
-
-class LessonCreate(BaseModel):
-    group_id: int
-    teacher_id: int
-    course_id: int
-
-class LessonResponse(LessonCreate):
-    id: int
-
-# Эндпоинты для Curator
-@app.post("/curators/", response_model=CuratorResponse)
-def create_curator(curator: CuratorCreate, db: Session = Depends(get_db)):
-    db_curator = Curator(**curator.dict())
-    db.add(db_curator)
-    db.commit()
-    db.refresh(db_curator)
-    return db_curator
-
-@app.get("/curators/", response_model=List[CuratorResponse])
-def read_curators(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(Curator).offset(skip).limit(limit).all()
-
-@app.get("/curators/{curator_id}", response_model=CuratorResponse)
-def read_curator(curator_id: int, db: Session = Depends(get_db)):
-    curator = db.query(Curator).filter(Curator.id == curator_id).first()
-    if curator is None:
-        raise HTTPException(status_code=404, detail="Curator not found")
-    return curator
-
-@app.put("/curators/{curator_id}", response_model=CuratorResponse)
-def update_curator(curator_id: int, curator: CuratorCreate, db: Session = Depends(get_db)):
-    db_curator = db.query(Curator).filter(Curator.id == curator_id).first()
-    if db_curator is None:
-        raise HTTPException(status_code=404, detail="Curator not found")
-    for key, value in curator.dict().items():
-        setattr(db_curator, key, value)
-    db.commit()
-    db.refresh(db_curator)
-    return db_curator
-
-@app.delete("/curators/{curator_id}")
-def delete_curator(curator_id: int, db: Session = Depends(get_db)):
-    db_curator = db.query(Curator).filter(Curator.id == curator_id).first()
-    if db_curator is None:
-        raise HTTPException(status_code=404, detail="Curator not found")
-    db.delete(db_curator)
-    db.commit()
-    return {"message": "Curator deleted successfully"}
-
-# Эндпоинты для Group (аналогично для остальных моделей)
-@app.post("/groups/", response_model=GroupResponse)
-def create_group(group: GroupCreate, db: Session = Depends(get_db)):
-    db_group = Group(**group.dict())
-    db.add(db_group)
-    db.commit()
-    db.refresh(db_group)
-    return db_group
-
-@app.get("/groups/", response_model=List[GroupResponse])
-def read_groups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
-    return db.query(Group).offset(skip).limit(limit).all()
-
-@app.get("/groups/{group_id}", response_model=GroupResponse)
-def read_group(group_id: int, db: Session = Depends(get_db)):
-    group = db.query(Group).filter(Group.id == group_id).first()
-    if group is None:
-        raise HTTPException(status_code=404, detail="Group not found")
-    return group
-
-@app.put("/groups/{group_id}", response_model=GroupResponse)
-def update_group(group_id: int, group: GroupCreate, db: Session = Depends(get_db)):
-    db_group = db.query(Group).filter(Group.id == group_id).first()
-    if db_group is None:
-        raise HTTPException(status_code=404, detail="Group not found")
-    for key, value in group.dict().items():
-        setattr(db_group, key, value)
-    db.commit()
-    db.refresh(db_group)
-    return db_group
-
-@app.delete("/groups/{group_id}")
-def delete_group(group_id: int, db: Session = Depends(get_db)):
-    db_group = db.query(Group).filter(Group.id == group_id).first()
-    if db_group is None:
-        raise HTTPException(status_code=404, detail="Group not found")
-    db.delete(db_group)
-    db.commit()
-    return {"message": "Group deleted successfully"}
-
-# Аналогичные эндпоинты для остальных моделей (Student, Course, Mark, Degree, Position, Teacher, Lesson)
-# Шаблон тот же: POST для создания, GET для чтения (одного или списка), PUT для обновления, DELETE для удаления
-
-# Пример для Student
-@app.post("/students/", response_model=StudentResponse)
-def create_student(student: StudentCreate, db: Session = Depends(get_db)):
-    db_student = Student(**student.dict())
-    db.add(db_student)
-    db.commit()
-    db.refresh(db_student)
-    return db_student
-
-@app.get("/students/", response_model=List[StudentResponse])
-def read_students(db = Depends(get_db)):
-    return db.query(Student)
-
-@app.get("/students/{student_id}", response_model=StudentResponse)
-def read_student(student_id: int, db: Session = Depends(get_db)):
-    student = db.query(Student).filter(Student.id == student_id).first()
-    if student is None:
-        raise HTTPException(status_code=404, detail="Student not found")
-    return student
-
-@app.put("/students/{student_id}", response_model=StudentResponse)
-def update_student(student_id: int, student: StudentCreate, db: Session = Depends(get_db)):
-    db_student = db.query(Student).filter(Student.id == student_id).first()
-    if db_student is None:
-        raise HTTPException(status_code=404, detail="Student not found")
-    for key, value in student.dict().items():
-        setattr(db_student, key, value)
-    db.commit()
-    db.refresh(db_student)
-    return db_student
-
-@app.delete("/students/{student_id}")
-def delete_student(student_id: int, db: Session = Depends(get_db)):
-    db_student = db.query(Student).filter(Student.id == student_id).first()
-    if db_student is None:
-        raise HTTPException(status_code=404, detail="Student not found")
-    db.delete(db_student)
-    db.commit()
-    return {"message": "Student deleted successfully"}
-
-# Дополнительные эндпоинты для специфичных запросов
-@app.get("/groups/{group_id}/students", response_model=List[StudentResponse])
-def read_group_students(group_id: int, db: Session = Depends(get_db)):
-    students = db.query(Student).filter(Student.group_id == group_id).all()
-    return students
-
-@app.get("/teachers/{teacher_id}/lessons", response_model=List[LessonResponse])
-def read_teacher_lessons(teacher_id: int, db: Session = Depends(get_db)):
-    lessons = db.query(Lesson).filter(Lesson.teacher_id == teacher_id).all()
-    return lessons
-
-@app.get("/students/{student_id}/marks", response_model=List[MarkResponse])
-def read_student_marks(student_id: int, db: Session = Depends(get_db)):
-    marks = db.query(Mark).filter(Mark.student_id == student_id).all()
-    return marks
-
-@app.get("/courses/{course_id}/marks", response_model=List[MarkResponse])
-def read_course_marks(course_id: int, db: Session = Depends(get_db)):
-    marks = db.query(Mark).filter(Mark.course_id == course_id).all()
-    return marks
-
 
 if __name__ == '__main__':
     uvicorn.run("main:app", reload=True)

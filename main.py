@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse
 from typing import Annotated, List
 from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, CheckConstraint, distinct, func
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column, Session, relationship
+from sqlalchemy.orm import declarative_base, Session, relationship
 from pydantic import BaseModel
 from starlette_admin.contrib.sqla import Admin, ModelView
 import uvicorn
@@ -23,6 +23,7 @@ class Group(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     curator_id = Column(Integer, ForeignKey('Curators.id'), nullable=False, unique=True)
     name_number = Column(String, nullable=False)
+
     curator = relationship("Curator")
 
 class Student(Base):
@@ -32,6 +33,7 @@ class Student(Base):
     group_id = Column(Integer, ForeignKey('Groups.id'), nullable=False)
     name = Column(String, nullable=False)
     birthday = Column(String, nullable=False)
+
     group = relationship("Group")
 
 
@@ -51,6 +53,7 @@ class Mark(Base):
     course_id = Column(Integer, ForeignKey('Courses.id'), nullable=False)
     student_id = Column(Integer, ForeignKey('Students.id', ondelete='CASCADE'), nullable=False)
     mark = Column(Integer)
+
     course = relationship("Course")
     student = relationship("Student")
 
@@ -73,6 +76,7 @@ class Teacher(Base):
     degree_id = Column(Integer, ForeignKey('Degrees.id'), nullable=False)
     position_id = Column(Integer, ForeignKey('Positions.id'), nullable=False)
     name = Column(String, nullable=False)
+
     degree = relationship("Degree")
     position = relationship("Position")
 
@@ -115,7 +119,7 @@ class CuratorCreate(BaseModel):
 class CuratorResponse(CuratorCreate):
     id: int
 
-@app.post("/curators/", tags=["CRUD"], response_model=CuratorResponse)
+@app.post("/curators", tags=["CRUD"], response_model=CuratorResponse)
 def create_curator(curator: CuratorCreate, db: dbDep):
     curator_db = Curator.model_validate(curator)
     db.add(curator_db)
@@ -123,7 +127,7 @@ def create_curator(curator: CuratorCreate, db: dbDep):
     db.refresh(curator_db)
     return curator_db
 
-@app.get("/curators/", tags=["CRUD"], response_model=List[CuratorResponse])
+@app.get("/curators", tags=["CRUD"], response_model=List[CuratorResponse])
 def read_curators(db: dbDep):
     return db.query(Curator).all()
 
@@ -162,7 +166,7 @@ class GroupCreate(BaseModel):
 class GroupResponse(GroupCreate):
     id: int
 
-@app.post("/groups/", tags=["CRUD"], response_model=GroupResponse)
+@app.post("/groups", tags=["CRUD"], response_model=GroupResponse)
 def create_group(group: GroupCreate, db: dbDep):
     group_db = Group.model_validate(group)
     db.add(group_db)
@@ -170,7 +174,7 @@ def create_group(group: GroupCreate, db: dbDep):
     db.refresh(group_db)
     return group_db
 
-@app.get("/groups/", tags=["CRUD"], response_model=List[GroupResponse])
+@app.get("/groups", tags=["CRUD"], response_model=List[GroupResponse])
 def read_groups(db: dbDep):
     return db.query(Group).all()
 
@@ -210,7 +214,7 @@ class StudentCreate(BaseModel):
 class StudentResponse(StudentCreate):
     id: int
 
-@app.post("/students/", tags=["CRUD"], response_model=StudentResponse)
+@app.post("/students", tags=["CRUD"], response_model=StudentResponse)
 def create_student(student: StudentCreate, db: dbDep):
     student_db = Student.model_validate(student)
     db.add(student_db)
@@ -218,7 +222,7 @@ def create_student(student: StudentCreate, db: dbDep):
     db.refresh(student_db)
     return student_db
 
-@app.get("/students/", tags=["CRUD"], response_model=List[StudentResponse])
+@app.get("/students", tags=["CRUD"], response_model=List[StudentResponse])
 def read_students(db: dbDep):
     return db.query(Student).all()
 
@@ -257,7 +261,7 @@ class CourseCreate(BaseModel):
 class CourseResponse(CourseCreate):
     id: int
 
-@app.post("/courses/", tags=["CRUD"], response_model=CourseResponse)
+@app.post("/courses", tags=["CRUD"], response_model=CourseResponse)
 def create_course(course: CourseCreate, db: dbDep):
     course_db = Course.model_validate(course)
     db.add(course_db)
@@ -265,7 +269,7 @@ def create_course(course: CourseCreate, db: dbDep):
     db.refresh(course_db)
     return course_db
 
-@app.get("/courses/", tags=["CRUD"], response_model=List[CourseResponse])
+@app.get("/courses", tags=["CRUD"], response_model=List[CourseResponse])
 def read_courses(db: dbDep):
     return db.query(Course).all()
 
@@ -304,7 +308,7 @@ class MarkCreate(BaseModel):
 class MarkResponse(MarkCreate):
     id: int
 
-@app.post("/marks/", tags=["CRUD"], response_model=MarkResponse)
+@app.post("/marks", tags=["CRUD"], response_model=MarkResponse)
 def create_mark(mark: MarkCreate, db: dbDep):
     mark_db = Mark.model_validate(mark)
     db.add(mark_db)
@@ -312,7 +316,7 @@ def create_mark(mark: MarkCreate, db: dbDep):
     db.refresh(mark_db)
     return mark_db
 
-@app.get("/marks/", tags=["CRUD"], response_model=List[MarkResponse])
+@app.get("/marks", tags=["CRUD"], response_model=List[MarkResponse])
 def read_marks(db: dbDep):
     return db.query(Mark).all()
 
@@ -351,7 +355,7 @@ class DegreeCreate(BaseModel):
 class DegreeResponse(DegreeCreate):
     id: int
 
-@app.post("/degrees/", tags=["CRUD"], response_model=DegreeResponse)
+@app.post("/degrees", tags=["CRUD"], response_model=DegreeResponse)
 def create_degree(degree: DegreeCreate, db: dbDep):
     degree_db = Degree.model_validate(degree)
     db.add(degree_db)
@@ -359,7 +363,7 @@ def create_degree(degree: DegreeCreate, db: dbDep):
     db.refresh(degree_db)
     return degree_db
 
-@app.get("/degrees/", tags=["CRUD"], response_model=List[DegreeResponse])
+@app.get("/degrees", tags=["CRUD"], response_model=List[DegreeResponse])
 def read_degrees(db: dbDep):
     return db.query(Degree).all()
 
@@ -396,7 +400,7 @@ class PositionCreate(BaseModel):
 class PositionResponse(PositionCreate):
     id: int
 
-@app.post("/positions/", tags=["CRUD"], response_model=PositionResponse)
+@app.post("/positions", tags=["CRUD"], response_model=PositionResponse)
 def create_position(position: PositionCreate, db: dbDep):
     position_db = Position.model_validate(position)
     db.add(position_db)
@@ -404,7 +408,7 @@ def create_position(position: PositionCreate, db: dbDep):
     db.refresh(position_db)
     return position_db
 
-@app.get("/positions/", tags=["CRUD"], response_model=List[PositionResponse])
+@app.get("/positions", tags=["CRUD"], response_model=List[PositionResponse])
 def read_positions(db: dbDep):
     return db.query(Position).all()
 
@@ -443,7 +447,7 @@ class TeacherCreate(BaseModel):
 class TeacherResponse(TeacherCreate):
     id: int
 
-@app.post("/teachers/", tags=["CRUD"], response_model=TeacherResponse)
+@app.post("/teachers", tags=["CRUD"], response_model=TeacherResponse)
 def create_teacher(teacher: PositionCreate, db: dbDep):
     teacher_db = Teacher.model_validate(teacher)
     db.add(teacher_db)
@@ -451,7 +455,7 @@ def create_teacher(teacher: PositionCreate, db: dbDep):
     db.refresh(teacher_db)
     return teacher_db
 
-@app.get("/teachers/", tags=["CRUD"], response_model=List[TeacherResponse])
+@app.get("/teachers", tags=["CRUD"], response_model=List[TeacherResponse])
 def read_teachers(db: dbDep):
     return db.query(Teacher).all()
 
@@ -492,7 +496,7 @@ class LessonCreate(BaseModel):
 class LessonResponse(LessonCreate):
     id: int
 
-@app.post("/lessons/", tags=["CRUD"], response_model=LessonResponse)
+@app.post("/lessons", tags=["CRUD"], response_model=LessonResponse)
 def create_lesson(lesson: LessonCreate, db: dbDep):
     lesson_db = Lesson.model_validate(lesson)
     db.add(lesson_db)
@@ -500,7 +504,7 @@ def create_lesson(lesson: LessonCreate, db: dbDep):
     db.refresh(lesson_db)
     return lesson_db
 
-@app.get("/lessons/", tags=["CRUD"], response_model=List[LessonResponse])
+@app.get("/lessons", tags=["CRUD"], response_model=List[LessonResponse])
 def read_lessons(db: dbDep):
     return db.query(Lesson).all()
 
@@ -531,6 +535,7 @@ def delete_lesson(lesson_id: int, db: dbDep):
     db.delete(lesson)
     db.commit()
     return {"ok": True}
+
 #-------------------------------------- JUST FOR CHILL --------------------------------------
 
 admin = Admin(engine, title="DataBase")
@@ -545,11 +550,12 @@ admin.add_view(ModelView(Degree))
 admin.add_view(ModelView(Position))
 admin.mount_to(app)
 
-# ------------------------------------------------------------------------------------------------
+# ---------------------------------------- QUERIES ------------------------------------------
 
 class StudentAvgGrade(BaseModel):
     student_name: str
     average_grade: float
+
 class ScheduleResponse(BaseModel):
     group_name: str
     course: str
@@ -568,11 +574,10 @@ class CuratorStudentsResponse(BaseModel):
 class TeacherInfoResponse(BaseModel):
     teacher: str
     degree: str
+    position: str
 
-@app.get("/students/avg-grades/", response_model=List[StudentAvgGrade])
-def get_students_avg_grades(db: Session = Depends(get_db)):
-    
-    
+@app.get("/students/avg-grades", tags=["Queries"], response_model=List[StudentAvgGrade])
+def get_students_avg_grades(db: dbDep):
     result = db.query(
         Student.name.label("student_name"),
         func.round(func.avg(Mark.mark), 2).label("average_grade")
@@ -581,23 +586,11 @@ def get_students_avg_grades(db: Session = Depends(get_db)):
     ).group_by(
         Student.id
     ).all()
-    
 
     return result
 
-@app.get("/schedule/{group_id}",response_model=List[ScheduleResponse])
-def schedule(group_id: int, db: Session = Depends(get_db)):
-    # SELECT 
-    # g.name_number AS group_name,
-    # c.title AS course,
-    # t.name AS teacher,
-    # l.time AS lesson_time
-    # FROM Lessons l
-    # JOIN Groups g ON l.group_id = g.id
-    # JOIN Courses c ON l.course_id = c.id
-    # JOIN Teachers t ON l.teacher_id = t.id
-    # WHERE g.id = 1 
-    # ORDER BY l.time;
+@app.get("/schedule/{group_id}", tags=["Queries"], response_model=List[ScheduleResponse])
+def schedule(group_id: int, db: dbDep):
     result = db.query(
         Lesson.time.label("lesson_time"),
         Group.name_number.label("group_name"),
@@ -612,17 +605,11 @@ def schedule(group_id: int, db: Session = Depends(get_db)):
     ).where(
         Group.id == group_id
     ).order_by(Lesson.time).all()
+
     return result
 
-@app.get("/teacher-load",response_model=List[TeacherCourseResponse])
-def teacher_load(db: Session = Depends(get_db)):
-    # SELECT DISTINCT
-    # t.name AS teacher,
-    # c.title AS course
-    # FROM Teachers t
-    # JOIN Lessons l ON t.id = l.teacher_id
-    # JOIN Courses c ON l.course_id = c.id;
-
+@app.get("/teacher-load", tags=["Queries"], response_model=List[TeacherCourseResponse])
+def teacher_load(db: dbDep):
     result = db.query(
         Teacher.name.label("teacher"),
         Course.title.label("course"),
@@ -631,19 +618,11 @@ def teacher_load(db: Session = Depends(get_db)):
     ).join(
         Course, Lesson.course_id == Course.id
     ).all()
+
     return result
 
-@app.get("/curator-load",response_model=List[CuratorStudentsResponse])
-def curator_load(db: Session = Depends(get_db)):
-    # SELECT 
-    # c.name AS curator,
-    # STRING_AGG(s.name, ', ') AS 'students',
-    # COUNT(DISTINCT s.id) AS stud_count
-    # FROM Curators c
-    # JOIN `Groups` g ON c.id = g.curator_id
-    # JOIN Students s ON g.id = s.group_id
-    # GROUP BY c.name;
-
+@app.get("/curator-load", tags=["Queries"], response_model=List[CuratorStudentsResponse])
+def curator_load(db: dbDep):
     result = db.query(
         Curator.name.label("curator"),
         func.aggregate_strings(Student.name, ", ").label("students"),
@@ -655,18 +634,11 @@ def curator_load(db: Session = Depends(get_db)):
     ).group_by(
         Curator.name
     ).all()
+
     return result
 
-@app.get("/teacher-info",response_model=List[TeacherInfoResponse])
-def teacher_load(db: Session = Depends(get_db)):
-    # SELECT
-    # t.name AS teacher,
-    # d.title AS degree,
-    # p.title AS 'position'
-    # FROM Degrees d
-    # JOIN Teachers t ON d.id = t.degree_id
-    # JOIN Positions p ON t.position_id = p.id;
-
+@app.get("/teacher-info", tags=["Queries"], response_model=List[TeacherInfoResponse])
+def teacher_load(db: dbDep):
     result = db.query(
         Degree.title.label("degree"),
         Teacher.name.label("teacher"),
@@ -676,6 +648,7 @@ def teacher_load(db: Session = Depends(get_db)):
     ).join(
         Position, Teacher.position_id == Position.id
     ).all()
+
     return result
 
 if __name__ == '__main__':

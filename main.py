@@ -1,8 +1,8 @@
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.responses import HTMLResponse, JSONResponse
 from typing import Annotated, List
-from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, CheckConstraint
-from sqlalchemy.orm import declarative_base, Mapped, mapped_column, Session
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, CheckConstraint, distinct, func
+from sqlalchemy.orm import declarative_base, Mapped, mapped_column, Session, relationship
 from pydantic import BaseModel
 from starlette_admin.contrib.sqla import Admin, ModelView
 import uvicorn
@@ -23,6 +23,7 @@ class Group(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     curator_id = Column(Integer, ForeignKey('Curators.id'), nullable=False, unique=True)
     name_number = Column(String, nullable=False)
+    curator = relationship("Curator")
 
 class Student(Base):
     __tablename__ = "Students"
@@ -31,6 +32,8 @@ class Student(Base):
     group_id = Column(Integer, ForeignKey('Groups.id'), nullable=False)
     name = Column(String, nullable=False)
     birthday = Column(String, nullable=False)
+    group = relationship("Group")
+
 
 class Course(Base):
     __tablename__ = "Courses"
@@ -48,6 +51,8 @@ class Mark(Base):
     course_id = Column(Integer, ForeignKey('Courses.id'), nullable=False)
     student_id = Column(Integer, ForeignKey('Students.id', ondelete='CASCADE'), nullable=False)
     mark = Column(Integer)
+    course = relationship("Course")
+    student = relationship("Student")
 
 class Degree(Base):
     __tablename__ = "Degrees"
@@ -68,6 +73,9 @@ class Teacher(Base):
     degree_id = Column(Integer, ForeignKey('Degrees.id'), nullable=False)
     position_id = Column(Integer, ForeignKey('Positions.id'), nullable=False)
     name = Column(String, nullable=False)
+    degree = relationship("Degree")
+    position = relationship("Position")
+
 
 class Lesson(Base):
     __tablename__ = "Lessons"
@@ -76,6 +84,12 @@ class Lesson(Base):
     group_id = Column(Integer, ForeignKey('Groups.id'), nullable=False)
     teacher_id = Column(Integer, ForeignKey('Teachers.id', ondelete='CASCADE'), nullable=False)
     course_id = Column(Integer, ForeignKey('Courses.id'), nullable=False)
+    time = Column(String, nullable=False)
+
+    group = relationship("Group")
+    teacher = relationship("Teacher")
+    course = relationship("Course")
+
 
 Base.metadata.create_all(bind = engine)
 
@@ -530,6 +544,365 @@ admin.add_view(ModelView(Curator))
 admin.add_view(ModelView(Degree))
 admin.add_view(ModelView(Position))
 admin.mount_to(app)
+
+# ------------------------------------------------------------------------------------------------
+
+def get_db():
+    db = Session(engine)
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Pydantic модели для запросов и ответов
+class CuratorCreate(BaseModel):
+    name: str
+
+class CuratorResponse(CuratorCreate):
+    id: int
+
+class GroupCreate(BaseModel):
+    curator_id: int
+    name_number: str
+
+class GroupResponse(GroupCreate):
+    id: int
+
+class StudentCreate(BaseModel):
+    group_id: int
+    name: str
+    birthday: str  # или можно использовать date если преобразуете строку
+
+class StudentResponse(StudentCreate):
+    id: int
+
+class CourseCreate(BaseModel):
+    title: str
+
+class CourseResponse(CourseCreate):
+    id: int
+
+class MarkCreate(BaseModel):
+    course_id: int
+    student_id: int
+    mark: int
+
+class MarkResponse(MarkCreate):
+    id: int
+
+class DegreeCreate(BaseModel):
+    title: str
+
+class DegreeResponse(DegreeCreate):
+    id: int
+
+class PositionCreate(BaseModel):
+    title: str
+
+class PositionResponse(PositionCreate):
+    id: int
+
+class TeacherCreate(BaseModel):
+    degree_id: int
+    position_id: int
+    name: str
+
+class TeacherResponse(TeacherCreate):
+    id: int
+
+class LessonCreate(BaseModel):
+    group_id: int
+    teacher_id: int
+    course_id: int
+
+class LessonResponse(LessonCreate):
+    id: int
+
+# Эндпоинты для Curator
+@app.post("/curators/", response_model=CuratorResponse)
+def create_curator(curator: CuratorCreate, db: Session = Depends(get_db)):
+    db_curator = Curator(**curator.dict())
+    db.add(db_curator)
+    db.commit()
+    db.refresh(db_curator)
+    return db_curator
+
+@app.get("/curators/", response_model=List[CuratorResponse])
+def read_curators(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(Curator).offset(skip).limit(limit).all()
+
+@app.get("/curators/{curator_id}", response_model=CuratorResponse)
+def read_curator(curator_id: int, db: Session = Depends(get_db)):
+    curator = db.query(Curator).filter(Curator.id == curator_id).first()
+    if curator is None:
+        raise HTTPException(status_code=404, detail="Curator not found")
+    return curator
+
+@app.put("/curators/{curator_id}", response_model=CuratorResponse)
+def update_curator(curator_id: int, curator: CuratorCreate, db: Session = Depends(get_db)):
+    db_curator = db.query(Curator).filter(Curator.id == curator_id).first()
+    if db_curator is None:
+        raise HTTPException(status_code=404, detail="Curator not found")
+    for key, value in curator.dict().items():
+        setattr(db_curator, key, value)
+    db.commit()
+    db.refresh(db_curator)
+    return db_curator
+
+@app.delete("/curators/{curator_id}")
+def delete_curator(curator_id: int, db: Session = Depends(get_db)):
+    db_curator = db.query(Curator).filter(Curator.id == curator_id).first()
+    if db_curator is None:
+        raise HTTPException(status_code=404, detail="Curator not found")
+    db.delete(db_curator)
+    db.commit()
+    return {"message": "Curator deleted successfully"}
+
+# Эндпоинты для Group (аналогично для остальных моделей)
+@app.post("/groups/", response_model=GroupResponse)
+def create_group(group: GroupCreate, db: Session = Depends(get_db)):
+    db_group = Group(**group.dict())
+    db.add(db_group)
+    db.commit()
+    db.refresh(db_group)
+    return db_group
+
+@app.get("/groups/", response_model=List[GroupResponse])
+def read_groups(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return db.query(Group).offset(skip).limit(limit).all()
+
+@app.get("/groups/{group_id}", response_model=GroupResponse)
+def read_group(group_id: int, db: Session = Depends(get_db)):
+    group = db.query(Group).filter(Group.id == group_id).first()
+    if group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return group
+
+@app.put("/groups/{group_id}", response_model=GroupResponse)
+def update_group(group_id: int, group: GroupCreate, db: Session = Depends(get_db)):
+    db_group = db.query(Group).filter(Group.id == group_id).first()
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    for key, value in group.dict().items():
+        setattr(db_group, key, value)
+    db.commit()
+    db.refresh(db_group)
+    return db_group
+
+@app.delete("/groups/{group_id}")
+def delete_group(group_id: int, db: Session = Depends(get_db)):
+    db_group = db.query(Group).filter(Group.id == group_id).first()
+    if db_group is None:
+        raise HTTPException(status_code=404, detail="Group not found")
+    db.delete(db_group)
+    db.commit()
+    return {"message": "Group deleted successfully"}
+
+# Аналогичные эндпоинты для остальных моделей (Student, Course, Mark, Degree, Position, Teacher, Lesson)
+# Шаблон тот же: POST для создания, GET для чтения (одного или списка), PUT для обновления, DELETE для удаления
+
+# Пример для Student
+@app.post("/students/", response_model=StudentResponse)
+def create_student(student: StudentCreate, db: Session = Depends(get_db)):
+    db_student = Student(**student.dict())
+    db.add(db_student)
+    db.commit()
+    db.refresh(db_student)
+    return db_student
+
+@app.get("/students/", response_model=List[StudentResponse])
+def read_students(db = Depends(get_db)):
+    return db.query(Student)
+
+@app.get("/students/{student_id}", response_model=StudentResponse)
+def read_student(student_id: int, db: Session = Depends(get_db)):
+    student = db.query(Student).filter(Student.id == student_id).first()
+    if student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return student
+
+@app.put("/students/{student_id}", response_model=StudentResponse)
+def update_student(student_id: int, student: StudentCreate, db: Session = Depends(get_db)):
+    db_student = db.query(Student).filter(Student.id == student_id).first()
+    if db_student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    for key, value in student.dict().items():
+        setattr(db_student, key, value)
+    db.commit()
+    db.refresh(db_student)
+    return db_student
+
+@app.delete("/students/{student_id}")
+def delete_student(student_id: int, db: Session = Depends(get_db)):
+    db_student = db.query(Student).filter(Student.id == student_id).first()
+    if db_student is None:
+        raise HTTPException(status_code=404, detail="Student not found")
+    db.delete(db_student)
+    db.commit()
+    return {"message": "Student deleted successfully"}
+
+# Дополнительные эндпоинты для специфичных запросов
+@app.get("/groups/{group_id}/students", response_model=List[StudentResponse])
+def read_group_students(group_id: int, db: Session = Depends(get_db)):
+    students = db.query(Student).filter(Student.group_id == group_id).all()
+    return students
+
+@app.get("/teachers/{teacher_id}/lessons", response_model=List[LessonResponse])
+def read_teacher_lessons(teacher_id: int, db: Session = Depends(get_db)):
+    lessons = db.query(Lesson).filter(Lesson.teacher_id == teacher_id).all()
+    return lessons
+
+@app.get("/students/{student_id}/marks", response_model=List[MarkResponse])
+def read_student_marks(student_id: int, db: Session = Depends(get_db)):
+    marks = db.query(Mark).filter(Mark.student_id == student_id).all()
+    return marks
+
+@app.get("/courses/{course_id}/marks", response_model=List[MarkResponse])
+def read_course_marks(course_id: int, db: Session = Depends(get_db)):
+    marks = db.query(Mark).filter(Mark.course_id == course_id).all()
+    return marks
+
+@app.get("/average-marks")
+def average_marks(db: Session = Depends(get_db)):
+    res = db.query(Mark)(func.avg(Mark.mark)).all()
+    if res==None:
+        return JSONResponse(content={"message": "В таблице нет студентов"})
+    return res
+
+@app.get("/marks")
+def read_marks(db: Session = Depends(get_db)):
+    return db.query(Student).join(Mark).filter(Student.id == Mark.student_id).all()
+
+class StudentAvgGrade(BaseModel):
+    student_name: str
+    average_grade: float
+class ScheduleResponse(BaseModel):
+    group_name: str
+    course: str
+    teacher: str
+    lesson_time:str   
+
+class TeacherCourseResponse(BaseModel):
+    teacher: str
+    course: str
+
+class CuratorStudentsResponse(BaseModel):
+    curator: str
+    students: str
+    stud_count: int
+
+class TeacherInfoResponse(BaseModel):
+    teacher: str
+    degree: str
+
+@app.get("/students/avg-grades/", response_model=List[StudentAvgGrade])
+def get_students_avg_grades(db: Session = Depends(get_db)):
+    
+    
+    result = db.query(
+        Student.name.label("student_name"),
+        func.round(func.avg(Mark.mark), 2).label("average_grade")
+    ).join(
+        Mark, Student.id == Mark.student_id
+    ).group_by(
+        Student.id
+    ).all()
+    
+
+    return result
+
+@app.get("/schedule/{group_id}",response_model=List[ScheduleResponse])
+def schedule(group_id: int, db: Session = Depends(get_db)):
+    # SELECT 
+    # g.name_number AS group_name,
+    # c.title AS course,
+    # t.name AS teacher,
+    # l.time AS lesson_time
+    # FROM Lessons l
+    # JOIN Groups g ON l.group_id = g.id
+    # JOIN Courses c ON l.course_id = c.id
+    # JOIN Teachers t ON l.teacher_id = t.id
+    # WHERE g.id = 1 
+    # ORDER BY l.time;
+    result = db.query(
+        Lesson.time.label("lesson_time"),
+        Group.name_number.label("group_name"),
+        Course.title.label("course"),
+        Teacher.name.label("teacher"),
+    ).join(
+        Group, Lesson.group_id == Group.id
+    ).join(
+        Course, Lesson.course_id == Course.id
+    ).join(
+        Teacher, Lesson.teacher_id == Teacher.id
+    ).where(
+        Group.id == group_id
+    ).order_by(Lesson.time).all()
+    return result
+
+@app.get("/teacher-load",response_model=List[TeacherCourseResponse])
+def teacher_load(db: Session = Depends(get_db)):
+    # SELECT DISTINCT
+    # t.name AS teacher,
+    # c.title AS course
+    # FROM Teachers t
+    # JOIN Lessons l ON t.id = l.teacher_id
+    # JOIN Courses c ON l.course_id = c.id;
+
+    result = db.query(
+        Teacher.name.label("teacher"),
+        Course.title.label("course"),
+    ).join(
+        Lesson, Teacher.id == Lesson.id
+    ).join(
+        Course, Lesson.course_id == Course.id
+    ).all()
+    return result
+
+@app.get("/curator-load",response_model=List[CuratorStudentsResponse])
+def curator_load(db: Session = Depends(get_db)):
+    # SELECT 
+    # c.name AS curator,
+    # STRING_AGG(s.name, ', ') AS 'students',
+    # COUNT(DISTINCT s.id) AS stud_count
+    # FROM Curators c
+    # JOIN `Groups` g ON c.id = g.curator_id
+    # JOIN Students s ON g.id = s.group_id
+    # GROUP BY c.name;
+
+    result = db.query(
+        Curator.name.label("curator"),
+        func.aggregate_strings(Student.name, ", ").label("students"),
+        func.count(distinct(Student.id)).label("stud_count"),
+    ).join(
+        Group, Curator.id == Group.curator_id
+    ).join(
+        Student, Group.id == Student.group_id
+    ).group_by(
+        Curator.name
+    ).all()
+    return result
+
+@app.get("/teacher-info",response_model=List[TeacherInfoResponse])
+def teacher_load(db: Session = Depends(get_db)):
+    # SELECT
+    # t.name AS teacher,
+    # d.title AS degree,
+    # p.title AS 'position'
+    # FROM Degrees d
+    # JOIN Teachers t ON d.id = t.degree_id
+    # JOIN Positions p ON t.position_id = p.id;
+
+    result = db.query(
+        Degree.title.label("degree"),
+        Teacher.name.label("teacher"),
+        Position.title.label("position")
+    ).join(
+        Teacher, Degree.id == Teacher.degree_id
+    ).join(
+        Position, Teacher.position_id == Position.id
+    ).all()
+    return result
 
 if __name__ == '__main__':
     uvicorn.run("main:app", reload=True)

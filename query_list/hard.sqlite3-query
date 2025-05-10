@@ -4,7 +4,8 @@ SELECT
 s.name AS student_name,
 ROUND(AVG(m.mark), 2) AS average_grade
 FROM Marks m
-JOIN Students s ON m.student_id = s.id;
+JOIN Students s ON m.student_id = s.id
+GROUP BY s.id;
 
 SELECT 
 g.name_number AS group_name,

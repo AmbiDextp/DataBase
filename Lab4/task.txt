@@ -1,0 +1,44 @@
+Задача 52А. Средние баллы
+Автор: Кленин А.С.
+
+Условие:
+Найти студентов, у которых средняя оценка по всем предметам выше,
+чем средняя оценка по группе. 
+
+Решение следует представить в виде текстового файла.
+
+DDL-описание таблиц:
+
+Students (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    group_id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    birthday TEXT NOT NULL,
+    FOREIGN KEY(group_id) REFERENCES Groups(id)
+);
+
+Marks(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL,
+    student_id INTEGER NOT NULL,    
+    mark INTEGER CHECK(mark >= 2 AND mark <= 5),    
+    FOREIGN KEY(course_id) REFERENCES Courses(id), 
+    FOREIGN KEY(student_id) REFERENCES Students(id) ON DELETE CASCADE
+);
+
+Courses(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL UNIQUE
+);
+
+Groups(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name_number TEXT NOT NULL
+);
+
+Результатом выполнения запроса должен быть список кортежей
+(student, group, student_avg, group_avg).
+
+
+Ограничения:
+Полагается, что для работы с базой данных используется SQLite3.

@@ -1,0 +1,35 @@
+-- database: ./DatasForTask.db
+-- Найти студентов, у которых средняя оценка по всем 
+--предметам выше чем средний балл по группе
+
+WITH
+student_avg as (
+    SELECT 
+    s.name AS student_name,
+    s.group_id,
+    ROUND(AVG(m.mark), 2) AS average_grade
+    FROM Marks m
+    JOIN Students s ON m.student_id = s.id
+    GROUP BY s.name, s.group_id
+),
+
+group_avg as (
+    SELECT
+    g.id,
+    g.name_number AS GRUPPA,
+    ROUND(AVG(m.mark), 2) AS avg_mark
+    FROM Groups g
+    JOIN Students s ON g.id = s.group_id
+    JOIN Marks m ON s.id = m.student_id
+    GROUP BY g.id, g.name_number
+)
+
+SELECT 
+    sa.student_name AS student,
+    sa.average_grade AS student_mark,
+    ga.avg_mark AS group_avg,
+    ga.GRUPPA
+FROM student_avg sa
+JOIN group_avg ga ON sa.group_id = ga.id
+WHERE sa.average_grade >= ga.avg_mark 
+ORDER BY ga.GRUPPA, sa.average_grade DESC;
